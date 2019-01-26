@@ -3,5 +3,10 @@
 
 <ItemGroup>	
 <ClInclude Include = "..\src\pch\pch.h"/>	
-<ClInclude Include = "..\src\pch\targetver.h"/>
+<ClInclude Include = "..\src\pch\targetver.h"/>	
+<ClInclude Include = "..\src\uc_model_command_line.h"/>	
+<ClInclude Include = "..\src\uc_model_exception.h"/>	
+<ClInclude Include = "..\src\uc_model_geometry.h"/>	
+<ClInclude Include = "..\src\uc_model_multi_textured_mesh.h"/>	
+<ClInclude Include = "..\src\uc_model_skeleton.h"/>
 </ItemGroup></Project> 
