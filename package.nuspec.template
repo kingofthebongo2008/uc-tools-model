@@ -19,6 +19,7 @@
     </dependencies>
   </metadata>
   <files>
-    <file src = "bin\win-x64\Release\uc-model.exe" target = "bin" />
+    <file src = "bin\win-x64\Release\*.exe" target = "lib\native" />
+    <file src = "bin\win-x64\Release\*.dll" target = "lib\native" />
   </files>
 </package>
