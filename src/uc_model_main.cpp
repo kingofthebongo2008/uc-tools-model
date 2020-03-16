@@ -335,7 +335,7 @@ namespace uc
                 return r;
             }
 
-            template <typename mesh_create_functor, typename model_create_functor, typename copy_attributes> void convert_multi_textured_mesh(const file_name_t& input_file_name, const file_name_t& output_file_name, const mesh_create_functor& create_mesh, const model_create_functor& create_model, const copy_attributes& copy_attributes, const std::vector<std::string>& texture_file_name, const std::vector<std::string>& texture_format)
+            template <typename mesh_create_functor, typename model_create_functor, typename copy_attributes> void convert_multi_textured_mesh(const file_name_t& input_file_name, const file_name_t& output_file_name, const mesh_create_functor& create_mesh, const model_create_functor& create_model, const copy_attributes& _copy_attributes, const std::vector<std::string>& texture_file_name, const std::vector<std::string>& texture_format)
             {
                 auto m = create_model();
                 auto mesh = create_mesh(input_file_name);
@@ -355,9 +355,9 @@ namespace uc
 
                 auto mats = materials(texture_file_name);
 
-                g.run([&m, &mesh, &input_file_name, &mats, &create_mesh, &copy_attributes]()
+                g.run([&m, &mesh, &input_file_name, &mats, &create_mesh, &_copy_attributes]()
                     {
-                        copy_attributes(m.get(), mesh.get(), mats);
+                        _copy_attributes(m.get(), mesh.get(), mats);
                     });
 
                 g.wait();
@@ -1206,7 +1206,7 @@ int32_t main(int32_t argc, const char* argv[])
 
         
         {
-            std::experimental::filesystem::path path(input_model);
+            std::filesystem::path path(input_model);
             auto e = path.extension().wstring();
 
             std::vector<std::string> textures;
