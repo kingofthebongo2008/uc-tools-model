@@ -4,14 +4,14 @@ pull_requests:
 image: Visual Studio 2019
 configuration: Release
 platform: x64
-clone_folder: c:\projects
+clone_folder: c:\projects-4aaysq8wgc0bypg8
 install:
-  - cd c:\projects
+  - cd c:\projects-4aaysq8wgc0bypg8
 build_script:
 - cmd: >-
-    nuget restore c:\projects\build\build.sln
+    nuget restore c:\projects-4aaysq8wgc0bypg8\build\build.sln
 
-    msbuild c:\projects\build\build.sln /p:Configuration="Release" /verbosity:quiet
+    msbuild c:\projects-4aaysq8wgc0bypg8\build\build.sln /p:Configuration="Release" /verbosity:quiet
 artifacts:
 - path: '*.nupkg'
   name: Stefan Dyulgerov
