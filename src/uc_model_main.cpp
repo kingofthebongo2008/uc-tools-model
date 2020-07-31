@@ -430,6 +430,19 @@ namespace uc
                 g.wait();
                 uc::lip::serialize_object(std::move(m), output_file_name);
             }
+
+            template <typename mesh_create_functor, typename model_create_functor, typename copy_attributes> void convert_multi_material_mesh(const file_name_t& input_file_name, const file_name_t& output_file_name, const mesh_create_functor& create_mesh, const model_create_functor& create_model, const copy_attributes& _copy_attributes)
+            {
+                auto m = create_model();
+                auto mesh = create_mesh(input_file_name);
+
+                _copy_attributes(m.get(), mesh.get());
+
+                mesh.reset();
+
+                uc::lip::serialize_object(std::move(m), output_file_name, uc::lzham::compress_buffer);
+            }
+
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             static void convert_model_fbx(const file_name_t& input_file_name, const file_name_t output_file_name)
             {
@@ -818,6 +831,81 @@ namespace uc
 
                 convert_multi_textured_mesh(input_file_name, output_file_name, f0, f1, f2, texture_file_name, texture_format);
             }
+
+            static std::vector<uint32_t> material_indices_count(uint32_t count)
+            {
+                std::vector<uint32_t> r;
+                for (auto i = 0u; i < count;++i)
+                {
+                    r.push_back(i);
+                }
+                return r;
+            }
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            static void copy_attributes_derivatives_skinned_multi_material_model(lip::derivatives_skinned_multi_material_model* d, const gx::import::geo::skinned_mesh* s)
+            {
+                auto view = gx::import::geo::skinned_mesh_material_view(s, material_indices_count(s->m_materials.size()));
+                auto positions = gx::import::geo::merge_positions(&view);
+
+                auto uvs = gx::import::geo::merge_uvs(&view);
+                auto faces = gx::import::geo::merge_faces(&view);
+                auto normals = gx::import::geo::merge_normals(&view);
+
+                auto weights = gx::import::geo::merge_blend_weights(&view);
+                auto indices = gx::import::geo::merge_blend_indices(&view);
+                auto tangents = gx::import::geo::merge_tangents(&view);
+                auto ranges = model::ranges(&view);
+
+                d->m_indices.m_data.resize(faces.size() * 3);
+                d->m_positions.m_data.resize(positions.size());
+                d->m_normals.m_data.resize(normals.size());
+                d->m_uv.m_data.resize(uvs.size());
+                d->m_tangents.m_data.resize(tangents.size());
+
+                d->m_blend_weights.resize(weights.size());
+                d->m_blend_indices.resize(indices.size());
+
+                copy_indices(faces, d->m_indices.m_data);
+                copy_positions(positions, d->m_positions.m_data);
+                copy_normals(normals, d->m_normals.m_data);
+                copy_uv(uvs, d->m_uv.m_data);
+                copy_tangents(tangents, d->m_tangents.m_data);
+
+                copy_blend_weights(weights, d->m_blend_weights);
+                copy_blend_indices(indices, d->m_blend_indices);
+
+
+                for (auto&& i : ranges)
+                {
+                    lip::primitive_range r = i;
+
+                    r.m_begin *= 3;
+                    r.m_end *= 3;
+                    d->m_primitive_ranges.push_back(r);
+                }
+            }
+
+            static void convert_derivatives_multi_material_skinned_model_fbx(const std::string& input_file_name, const std::string& output_file_name, const std::vector< std::string>& texture_file_name, const std::vector< std::string>& texture_format)
+            {
+                auto f0 = [](const file_name_t& input_file_name)
+                {
+                    return gx::import::fbx::create_skinned_mesh(input_file_name);
+                };
+
+                auto f1 = []()
+                {
+                    return std::make_unique<uc::lip::derivatives_skinned_multi_material_model>();
+                };
+
+                auto f2 = [](lip::derivatives_skinned_multi_material_model* d, const gx::import::geo::skinned_mesh* s)
+                {
+                    copy_attributes_derivatives_skinned_multi_material_model(d, s);
+                };
+
+                convert_multi_material_mesh(input_file_name, output_file_name, f0, f1, f2);
+            }
+
             static std::tuple< std::vector<std::string>, std::vector<std::string> > clean_duplicate_textures(const std::vector<std::string>& texture_names, const std::vector<std::string>& texture_formats)
             {
                 using namespace std;
@@ -952,6 +1040,12 @@ namespace uc
         std::string model_to_string_type<derivatives_skinned_model>()
         {
             return "derivatives_skinned_model";
+        }
+
+        template <>
+        std::string model_to_string_type<derivatives_skinned_multi_material_model>()
+        {
+            return "derivatives_skinned_multi_material_model";
         }
     }
 }
@@ -1092,6 +1186,16 @@ namespace uc
                 };
             }
 
+            template<> convertor make_convertor<lip::derivatives_skinned_multi_material_model>()
+            {
+                return
+                {
+                    lip::model_to_string_type<lip::derivatives_skinned_multi_material_model>(),
+                    false,
+                    convert_derivatives_multi_material_skinned_model_fbx
+                };
+            }
+
             std::vector< convertor > make_convertors()
             {
                 //todo: typelists
@@ -1112,6 +1216,7 @@ namespace uc
                 r.push_back(make_convertor<lip::normal_skinned_model>());
                 r.push_back(make_convertor<lip::skinned_model>());
                 r.push_back(make_convertor<lip::derivatives_skinned_model>());
+                r.push_back(make_convertor<lip::derivatives_skinned_multi_material_model>());
 
 
                 return r;
